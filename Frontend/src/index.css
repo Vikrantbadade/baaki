@@ -1,0 +1,138 @@
+/* ═══════════════════════════════════════════════════════════════
+   BAAKI Design System — Global CSS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Local Fonts ─────────────────────────────────────────── */
+@font-face {
+  font-family: 'Wanaraseta';
+  src: url('/assets/fonts/wanaraseta/WANARASETA.otf') format('opentype'),
+    url('/assets/fonts/wanaraseta/WANARASETA.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── 2. CSS Variables ───────────────────────────────────────── */
+:root {
+  /* Brand Colors */
+  --color-bg:            #ffffff;
+  --color-bg-card:       #ffffff;
+  --color-surface:       #f0f3f0;
+  --color-text-primary:  #000000;
+  --color-text-secondary:#4a4a4a;
+  --color-text-muted:    #888888;
+  --color-accent-green:  #1b8d0d;
+  --color-accent-green-light: #167a0b;
+  --color-accent-green-subtle: #eef6ec;
+  --color-border:        #e2e8e2;
+  --color-border-input:  #e2e8e2;
+  --color-feature-divider: #8b8b8b;
+  --color-poster-border: #b1b0ab;
+  --color-poster-bg: #f3f2eb;
+  --color-black:         #000000;
+  --color-white:         #ffffff;
+  --color-error:         #c0392b;
+  --color-error-bg:      #fdf0ef;
+
+  /* Typography */
+  --font-editorial:   'Frank Ruhl Libre', 'Georgia', serif;
+  --font-interface:   'Alan Sans', Arial, sans-serif;
+  --font-wordmark:    'Wanaraseta', serif;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --radius-poster: 30px;
+  --poster-width: 548px;
+  --poster-height: 700px;
+}
+
+/* ── 3. Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-interface);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── 4. Shared Layout ───────────────────────────────────────── */
+.page-wrapper {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  align-items: stretch;
+}
+
+.two-column-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  min-height: 100vh;
+  align-items: center;
+}
+
+/* ── 5. Poster Image ────────────────────────────────────────── */
+.poster-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-poster-border);
+  background-color: var(--color-poster-bg);
+  border-radius: var(--radius-poster);
+}
+
+.poster-image {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ── 6. Utility ─────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

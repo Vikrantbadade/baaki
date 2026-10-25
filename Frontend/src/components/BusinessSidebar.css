@@ -1,0 +1,123 @@
+.business-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: 235px;
+  height: 100vh;
+  padding: 12px 16px 14px;
+  color: #111111;
+  background: #fffdf2;
+  border-right: 1px solid #e8e4d6;
+}
+
+.business-brand {
+  display: flex;
+  align-items: center;
+  height: 68px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  color: #138b0d;
+  text-decoration: none;
+  transform: translateX(-9px);
+}
+
+.business-brand img {
+  flex: 0 0 82px;
+  width: 82px;
+  height: 68px;
+  object-fit: contain;
+  transform: scale(1.2);
+}
+
+.business-brand span {
+  margin-left: -6px;
+  font-family: var(--font-wordmark);
+  font-size: 44px;
+  line-height: 1;
+}
+
+.business-navigation {
+  flex: 1;
+  min-height: 0;
+}
+
+.business-nav-group {
+  padding: 2px 0;
+}
+
+.business-nav-group--separated {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #8f8b80;
+}
+
+.business-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 44px;
+  padding: 0 5px;
+  border-radius: 8px;
+  color: #101010;
+  font-family: var(--font-interface);
+  font-size: 16px;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.business-nav-item.is-active {
+  background: #dfcea0;
+}
+
+.business-nav-item[aria-disabled='true'] {
+  cursor: default;
+}
+
+.business-nav-icon {
+  display: flex;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #4d4b46;
+  border-radius: 8px;
+  color: #23231f;
+}
+
+.business-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 42px;
+  padding: 4px 10px;
+  border: 1px solid #ddd9ce;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(40, 34, 18, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.business-profile > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-profile-avatar {
+  display: flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #eee8d9;
+  color: #4b493f;
+  font-size: 12px;
+}

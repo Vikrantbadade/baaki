@@ -1,0 +1,18 @@
+process.env.NODE_ENV = "test";
+process.env.PORT = "3000";
+process.env.APP_BASE_URL = "http://localhost:3000";
+process.env.FRONTEND_ORIGINS = "http://localhost:5173";
+process.env.SUPABASE_URL = "https://example.supabase.co";
+process.env.SUPABASE_ANON_KEY = "test-anon-key";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "";
+process.env.RAZORPAY_KEY_ID = "";
+process.env.RAZORPAY_KEY_SECRET = "";
+process.env.RAZORPAY_WEBHOOK_SECRET = "test-razorpay-secret";
+process.env.N8N_BASE_URL = "";
+process.env.N8N_WEBHOOK_SECRET = "test-n8n-secret";
+process.env.ML_VOICE_SERVICE_URL = "";
+process.env.ML_STRATEGY_SERVICE_URL = "";
+process.env.ML_SERVICE_AUTH_TOKEN = "";
+process.env.LOG_LEVEL = "silent";
+delete process.env.SUPABASE_PUBLISHABLE_KEY;
+delete process.env.SUPABASE_SECRET_KEY;
