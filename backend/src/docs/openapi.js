@@ -50,7 +50,7 @@ export const openapi = {
   servers: [{ url: "/" }],
   components: {
     securitySchemes: {
-      bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "Supabase access token" },
+      bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
     },
   },
   paths: {
@@ -60,7 +60,19 @@ export const openapi = {
     "/api/v1/webhooks/n8n/delivery-status": {
       post: operation("Record a signed n8n delivery callback", false, true),
     },
+    "/api/v1/auth/register": { post: operation("Register with email and password", false, true) },
+    "/api/v1/auth/login": { post: operation("Log in with email and password", false, true) },
+    "/api/v1/auth/logout": { post: operation("Revoke the current access session") },
     "/api/v1/auth/me": { get: operation("Get authenticated user") },
+    "/api/v1/auth/password": { post: operation("Update password for the authenticated user", true, true) },
+    "/api/v1/auth/password-reset": {
+      post: {
+        ...operation("Request password reset; delivery is unavailable until mail is configured", false, true),
+        responses: {
+          "501": { description: "Password reset delivery is not configured" },
+        },
+      },
+    },
     "/api/v1/businesses": { post: operation("Create the owner's initial business", true, true) },
     "/api/v1/businesses/current": {
       get: operation("Get current business"),
@@ -129,6 +141,9 @@ export const openapi = {
     "/api/v1/invoices/documents/{documentId}/download": {
       get: operation("Create a short-lived authorized document URL", true, false, [pathParameter("documentId")]),
     },
+    "/api/v1/invoices/documents/{documentId}/content": {
+      get: operation("Download using a single-use short-lived capability token", false, false, [pathParameter("documentId")]),
+    },
     "/api/v1/invoices/{invoiceId}/timeline": {
       get: operation("List immutable invoice timeline events", true, false, [pathParameter("invoiceId")]),
     },
@@ -189,7 +204,7 @@ export const openapi = {
       post: operation("Cancel eligible collection plan", true, false, [pathParameter("planId")]),
     },
     "/api/v1/collection-plans/{planId}/execute": {
-      post: operation("Execute approved collection plan and schedule reminders", true, false, [pathParameter("planId")]),
+      post: operation("Execute approved plan, schedule reminders, and notify n8n best-effort", true, false, [pathParameter("planId")]),
     },
   },
 };

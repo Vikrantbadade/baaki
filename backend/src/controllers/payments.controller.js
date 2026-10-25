@@ -9,11 +9,11 @@ export async function createPayment(req, res) {
 }
 
 export async function listPayments(req, res) {
-  send(res, req, await payments.getPayments(req.supabase, req.business.id, req.validated.query));
+  send(res, req, await payments.getPayments(req.db, req.business.id, req.validated.query));
 }
 
 export async function getPayment(req, res) {
-  send(res, req, await payments.getPaymentById(req.supabase, req.business.id, req.validated.params.paymentId));
+  send(res, req, await payments.getPaymentById(req.db, req.business.id, req.validated.params.paymentId));
 }
 
 export async function createAllocations(req, res) {
@@ -33,6 +33,6 @@ export async function listAllocations(req, res) {
   send(
     res,
     req,
-    await payments.getAllocations(req.supabase, req.business.id, req.validated.params.paymentId),
+    await payments.getAllocations(req.db, req.business.id, req.validated.params.paymentId),
   );
 }

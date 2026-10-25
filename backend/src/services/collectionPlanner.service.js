@@ -1,16 +1,16 @@
 import { env } from "../config/env.js";
 import { AppError } from "../errors/AppError.js";
 import { requestCollectionStrategyModel } from "../integrations/ml/modelService.client.js";
+import { deliverN8nEvent } from "./n8n.service.js";
 import {
   getCollectionPlan,
   getInvoicesForPlanning,
-  insertCollectionPlan,
-  insertCollectionPlanItems,
-  insertPlanReminders,
+  createCollectionPlanWithItems,
+  executePlanWithReminders,
   listCollectionPlans,
   updateCollectionPlan,
 } from "../repositories/collectionPlans.repository.js";
-import { throwOnSupabaseError } from "../utils/supabaseError.js";
+import { throwOnDatabaseError } from "../utils/databaseResult.js";
 
 /**
  * Calculates the exact probability that the collected amount meets or exceeds targetPaise.
@@ -278,7 +278,7 @@ export function generateCollectionPlansAlgorithm(invoices, targetPaise, deadline
 /**
  * Preview collection plan recommendations using live database invoices
  */
-export async function previewCollectionPlan(supabase, businessId, input) {
+export async function previewCollectionPlan(db, businessId, input) {
   const targetPaise =
     input.targetPaise !== undefined
       ? input.targetPaise
@@ -294,11 +294,11 @@ export async function previewCollectionPlan(supabase, businessId, input) {
 
   // Fetch actual issued/partially_paid invoices from DB
   const { data: dbInvoices, error } = await getInvoicesForPlanning(
-    supabase,
+    db,
     businessId,
     input.customerIds,
   );
-  throwOnSupabaseError(error);
+  throwOnDatabaseError(error);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -353,7 +353,7 @@ export async function previewCollectionPlan(supabase, businessId, input) {
 /**
  * Save selected collection plan to database
  */
-export async function saveCollectionPlan(supabase, businessId, input) {
+export async function saveCollectionPlan(db, businessId, input) {
   const targetPaise = input.targetPaise;
   const deadlineDays = input.deadlineDays;
 
@@ -369,49 +369,38 @@ export async function saveCollectionPlan(supabase, businessId, input) {
     isDemoPrediction: true,
   };
 
-  const { data: plan, error: planError } = await insertCollectionPlan(supabase, businessId, {
+  const { data, error } = await createCollectionPlanWithItems(db, businessId, {
     targetPaise,
     deadlineDate: deadlineIso,
     recommendation,
-  });
-  throwOnSupabaseError(planError);
-
-  if (input.items && input.items.length > 0) {
-    const { error: itemsError } = await insertCollectionPlanItems(
-      supabase,
-      businessId,
-      plan.id,
-      input.items,
-    );
-    throwOnSupabaseError(itemsError);
-  }
-
-  return getCollectionPlanById(supabase, businessId, plan.id);
+  }, input.items ?? []);
+  throwOnDatabaseError(error);
+  return data;
 }
 
-export async function getCollectionPlans(supabase, businessId, query) {
+export async function getCollectionPlans(db, businessId, query) {
   const page = query.page ?? 1;
   const limit = query.limit ?? 25;
-  const { data, error, count } = await listCollectionPlans(supabase, businessId, {
+  const { data, error, count } = await listCollectionPlans(db, businessId, {
     page,
     limit,
     status: query.status,
   });
-  throwOnSupabaseError(error);
+  throwOnDatabaseError(error);
   return { items: data || [], page, limit, total: count || 0 };
 }
 
-export async function getCollectionPlanById(supabase, businessId, planId) {
-  const { data, error } = await getCollectionPlan(supabase, businessId, planId);
-  throwOnSupabaseError(error);
+export async function getCollectionPlanById(db, businessId, planId) {
+  const { data, error } = await getCollectionPlan(db, businessId, planId);
+  throwOnDatabaseError(error);
   if (!data) {
     throw new AppError(404, "COLLECTION_PLAN_NOT_FOUND", "Collection plan not found");
   }
   return data;
 }
 
-export async function approveCollectionPlan(supabase, businessId, planId) {
-  const plan = await getCollectionPlanById(supabase, businessId, planId);
+export async function approveCollectionPlan(db, businessId, planId) {
+  const plan = await getCollectionPlanById(db, businessId, planId);
   if (plan.status !== "proposed") {
     throw new AppError(
       409,
@@ -420,16 +409,16 @@ export async function approveCollectionPlan(supabase, businessId, planId) {
     );
   }
 
-  const { data, error } = await updateCollectionPlan(supabase, businessId, planId, {
+  const { data, error } = await updateCollectionPlan(db, businessId, planId, {
     status: "approved",
     approved_at: new Date().toISOString(),
   });
-  throwOnSupabaseError(error);
+  throwOnDatabaseError(error);
   return data;
 }
 
-export async function rejectCollectionPlan(supabase, businessId, planId, reason = null) {
-  const plan = await getCollectionPlanById(supabase, businessId, planId);
+export async function rejectCollectionPlan(db, businessId, planId, reason = null) {
+  const plan = await getCollectionPlanById(db, businessId, planId);
   if (plan.status !== "proposed") {
     throw new AppError(
       409,
@@ -443,17 +432,17 @@ export async function rejectCollectionPlan(supabase, businessId, planId, reason 
     rejectionReason: reason,
   };
 
-  const { data, error } = await updateCollectionPlan(supabase, businessId, planId, {
+  const { data, error } = await updateCollectionPlan(db, businessId, planId, {
     status: "rejected",
     rejected_at: new Date().toISOString(),
     recommendation: updatedRecommendation,
   });
-  throwOnSupabaseError(error);
+  throwOnDatabaseError(error);
   return data;
 }
 
-export async function cancelCollectionPlan(supabase, businessId, planId) {
-  const plan = await getCollectionPlanById(supabase, businessId, planId);
+export async function cancelCollectionPlan(db, businessId, planId) {
+  const plan = await getCollectionPlanById(db, businessId, planId);
   if (["completed", "cancelled"].includes(plan.status)) {
     throw new AppError(
       409,
@@ -462,15 +451,15 @@ export async function cancelCollectionPlan(supabase, businessId, planId) {
     );
   }
 
-  const { data, error } = await updateCollectionPlan(supabase, businessId, planId, {
+  const { data, error } = await updateCollectionPlan(db, businessId, planId, {
     status: "cancelled",
   });
-  throwOnSupabaseError(error);
+  throwOnDatabaseError(error);
   return data;
 }
 
-export async function executeCollectionPlan(supabase, businessId, planId) {
-  const plan = await getCollectionPlanById(supabase, businessId, planId);
+export async function executeCollectionPlan(db, businessId, planId, requestId) {
+  const plan = await getCollectionPlanById(db, businessId, planId);
   if (plan.status !== "approved") {
     throw new AppError(
       409,
@@ -485,26 +474,29 @@ export async function executeCollectionPlan(supabase, businessId, planId) {
   }
 
   // Create reminders for the plan items
-  const { data: reminders, error: remindersError } = await insertPlanReminders(
-    supabase,
+  const result = await executePlanWithReminders(db, businessId, planId, items);
+  const eventId = `collection-plan:${planId}:reminders:v1`;
+  const automation = await deliverN8nEvent({
+    eventId,
+    eventType: "collection_plan.reminders_requested",
+    version: 1,
+    occurredAt: new Date().toISOString(),
     businessId,
-    planId,
-    items,
-  );
-  throwOnSupabaseError(remindersError);
-
-  // Transition status to executing
-  const { data: updatedPlan, error: planError } = await updateCollectionPlan(
-    supabase,
-    businessId,
-    planId,
-    { status: "executing" },
-  );
-  throwOnSupabaseError(planError);
+    data: {
+      collectionPlanId: planId,
+      reminders: result.reminders.map((reminder) => ({
+        reminderId: reminder.id,
+        invoiceId: reminder.invoice_id ?? null,
+        channel: reminder.channel,
+        scheduledAt: new Date(reminder.scheduled_at).toISOString(),
+      })),
+    },
+  }, { requestId });
 
   return {
-    plan: updatedPlan,
-    remindersScheduled: (reminders || []).length,
-    reminders,
+    plan: result.plan,
+    remindersScheduled: result.reminders.length,
+    reminders: result.reminders,
+    automation,
   };
 }

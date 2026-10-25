@@ -16,7 +16,7 @@ describe("Collection Plans & Voice API Endpoints", () => {
     expect(response.body.paths["/api/v1/collection-plans/{planId}/execute"].post).toBeTruthy();
   });
 
-  it("protects collection plan routes with Supabase authentication", async () => {
+  it("protects collection plan routes with JWT authentication", async () => {
     const unauthVoice = await request(app)
       .post("/api/v1/collection-plans/interpret-voice")
       .send({ transcript: "Need 5000 in 3 days" });
@@ -32,5 +32,10 @@ describe("Collection Plans & Voice API Endpoints", () => {
     const unauthList = await request(app).get("/api/v1/collection-plans");
     expect(unauthList.status).toBe(401);
     expect(unauthList.body.error.code).toBe("UNAUTHENTICATED");
+
+    const unauthExecute = await request(app)
+      .post("/api/v1/collection-plans/00000000-0000-4000-8000-000000000001/execute");
+    expect(unauthExecute.status).toBe(401);
+    expect(unauthExecute.body.error.code).toBe("UNAUTHENTICATED");
   });
 });

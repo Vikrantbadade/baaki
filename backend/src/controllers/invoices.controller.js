@@ -16,14 +16,14 @@ export async function createInvoice(req, res) {
 }
 
 export async function listInvoices(req, res) {
-  send(res, req, await invoices.getInvoices(req.supabase, req.business.id, req.validated.query));
+  send(res, req, await invoices.getInvoices(req.db, req.business.id, req.validated.query));
 }
 
 export async function getInvoice(req, res) {
   send(
     res,
     req,
-    await invoices.getInvoiceById(req.supabase, req.business.id, req.validated.params.invoiceId),
+    await invoices.getInvoiceById(req.db, req.business.id, req.validated.params.invoiceId),
   );
 }
 
@@ -39,7 +39,7 @@ export async function issueInvoice(req, res) {
   send(
     res,
     req,
-    await invoices.issueInvoiceForBusiness(req.supabase, req.business.id, req.validated.params.invoiceId),
+    await invoices.issueInvoiceForBusiness(req.db, req.business.id, req.validated.params.invoiceId),
   );
 }
 
@@ -48,7 +48,7 @@ export async function cancelInvoice(req, res) {
     res,
     req,
     await invoices.cancelInvoiceForBusiness(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.params.invoiceId,
       req.validated.body.reason,
@@ -63,7 +63,7 @@ export async function previewInvoiceDocument(req, res) {
 
 export async function downloadInvoicePdf(req, res) {
   const { content, filename } = await invoiceDocuments.generateInvoicePdf(
-    req.supabase,
+    req.db,
     req.business.id,
     req.user.id,
     req.validated.params.invoiceId,
@@ -77,7 +77,7 @@ export async function downloadInvoicePdf(req, res) {
 
 export async function getInvoiceUpiQr(req, res) {
   const invoice = await invoices.getInvoiceById(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.invoiceId,
   );
@@ -91,7 +91,7 @@ export async function getInvoiceUpiQr(req, res) {
 
 export async function listInvoiceDocuments(req, res) {
   const data = await invoiceDocuments.getInvoiceDocuments(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.invoiceId,
   );
@@ -100,11 +100,24 @@ export async function listInvoiceDocuments(req, res) {
 
 export async function getInvoiceDocumentDownload(req, res) {
   const data = await invoiceDocuments.createInvoiceDocumentDownloadUrl(
-    req.supabase,
+    req.db,
     req.business.id,
+    req.user.id,
     req.validated.params.documentId,
   );
   send(res, req, data);
+}
+
+export async function downloadInvoiceDocumentContent(req, res) {
+  const { content, filename } = await invoiceDocuments.consumeInvoiceDocumentDownloadToken(
+    req.validated.params.documentId,
+    req.validated.query.token,
+  );
+  res
+    .status(200)
+    .type("application/pdf")
+    .set("Content-Disposition", `attachment; filename="${filename}"`)
+    .send(content);
 }
 
 export async function getInvoiceTimeline(req, res) {
@@ -112,7 +125,7 @@ export async function getInvoiceTimeline(req, res) {
     res,
     req,
     await invoices.getInvoiceTimeline(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.params.invoiceId,
       req.validated.query,

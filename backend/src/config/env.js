@@ -9,6 +9,22 @@ function isHttpUrl(value) {
   }
 }
 
+function isHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isPostgresUrl(value) {
+  try {
+    return ["postgres:", "postgresql:"].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function isHttpOrigin(value) {
   try {
     const parsed = new URL(value);
@@ -30,6 +46,11 @@ const optionalHttpUrl = optionalText.pipe(
     .refine(isHttpUrl, "Must use HTTP or HTTPS")
     .optional(),
 );
+
+const n8nEnabled = z.preprocess(
+  (value) => (typeof value === "string" ? value.toLowerCase() : value),
+  z.enum(["true", "false"]).transform((value) => value === "true"),
+).default(false);
 
 const appBaseUrl = z
   .string()
@@ -55,19 +76,22 @@ export const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   APP_BASE_URL: appBaseUrl.default("http://localhost:3000"),
   FRONTEND_ORIGINS: frontendOrigins,
-  SUPABASE_URL: z
+  DATABASE_URL: z
     .string()
     .trim()
     .url()
-    .refine(isHttpUrl, "Must use HTTP or HTTPS")
-    .transform((value) => value.replace(/\/+$/, "")),
-  SUPABASE_ANON_KEY: z.string().trim().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: optionalText,
+    .refine(isPostgresUrl, "Must use PostgreSQL"),
+  JWT_SECRET: z.string().min(32),
+  JWT_ACCESS_TOKEN_TTL: z.string().regex(/^\d+[smhd]$/, "Must be a duration such as 30m or 1h").default("30m"),
   RAZORPAY_KEY_ID: optionalText,
   RAZORPAY_KEY_SECRET: optionalText,
   RAZORPAY_WEBHOOK_SECRET: optionalText,
-  N8N_BASE_URL: optionalHttpUrl,
+  N8N_BASE_URL: optionalText.pipe(
+    z.string().url().refine(isHttpsUrl, "Must use HTTPS").optional(),
+  ),
   N8N_WEBHOOK_SECRET: optionalText,
+  N8N_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(15000),
+  N8N_ENABLED: n8nEnabled,
   ML_VOICE_SERVICE_URL: optionalHttpUrl,
   ML_STRATEGY_SERVICE_URL: optionalHttpUrl,
   ML_SERVICE_AUTH_TOKEN: optionalText,
@@ -80,26 +104,22 @@ export const envSchema = z.object({
       message: "Set both Razorpay API credentials or leave both empty",
     });
   }
+  if (configuration.N8N_ENABLED && !configuration.N8N_BASE_URL) {
+    context.addIssue({
+      code: "custom",
+      path: ["N8N_BASE_URL"],
+      message: "Set N8N_BASE_URL when N8N_ENABLED is true",
+    });
+  }
 });
 
-const deprecatedSupabaseNames = {
-  SUPABASE_PUBLISHABLE_KEY: "Use SUPABASE_ANON_KEY for a legacy anon or compatible publishable key.",
-  SUPABASE_SECRET_KEY: "Use SUPABASE_SERVICE_ROLE_KEY for a legacy service-role or compatible secret key.",
-};
-
 export function parseEnvironment(source = process.env) {
-  const deprecatedIssues = Object.entries(deprecatedSupabaseNames)
-    .filter(([name]) => typeof source[name] === "string" && source[name].trim() !== "")
-    .map(([name, message]) => `${name}: ${message}`);
   const result = envSchema.safeParse(source);
 
-  if (!result.success || deprecatedIssues.length > 0) {
-    const schemaIssues = result.success
-      ? []
-      : result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
-    const details = [...deprecatedIssues, ...schemaIssues].join("; ");
+  if (!result.success) {
+    const details = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
     throw new Error(
-      `Invalid environment configuration: ${details}. Remove obsolete names; secret values are never included in this error.`,
+      `Invalid environment configuration: ${details}. Secret values are never included in this error.`,
     );
   }
 

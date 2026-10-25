@@ -8,10 +8,10 @@ import {
   listCustomers,
   updateCustomer,
 } from "../repositories/customers.repository.js";
-import { throwOnSupabaseError } from "../utils/supabaseError.js";
+import { throwOnDatabaseError } from "../utils/databaseResult.js";
 import { sumPaise } from "../utils/money.js";
 
-export async function addCustomer(supabase, businessId, input) {
+export async function addCustomer(db, businessId, input) {
   const row = {
     name: input.name,
     email: input.email,
@@ -20,26 +20,26 @@ export async function addCustomer(supabase, businessId, input) {
     tax_id: input.taxId,
     notes: input.notes,
   };
-  const { data, error } = await createCustomer(supabase, businessId, row);
-  throwOnSupabaseError(error);
+  const { data, error } = await createCustomer(db, businessId, row);
+  throwOnDatabaseError(error);
   return data;
 }
 
-export async function getCustomers(supabase, businessId, query) {
-  const { data, error, count } = await listCustomers(supabase, businessId, query);
-  throwOnSupabaseError(error);
+export async function getCustomers(db, businessId, query) {
+  const { data, error, count } = await listCustomers(db, businessId, query);
+  throwOnDatabaseError(error);
   return { items: data, page: query.page, limit: query.limit, total: count };
 }
 
-export async function getCustomerById(supabase, businessId, customerId) {
-  const { data, error } = await getCustomer(supabase, businessId, customerId);
-  throwOnSupabaseError(error);
+export async function getCustomerById(db, businessId, customerId) {
+  const { data, error } = await getCustomer(db, businessId, customerId);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "CUSTOMER_NOT_FOUND", "Customer was not found");
   return data;
 }
 
-export async function changeCustomer(supabase, businessId, customerId, input) {
-  await getCustomerById(supabase, businessId, customerId);
+export async function changeCustomer(db, businessId, customerId, input) {
+  await getCustomerById(db, businessId, customerId);
   const patch = {
     ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.email !== undefined ? { email: input.email } : {}),
@@ -48,27 +48,27 @@ export async function changeCustomer(supabase, businessId, customerId, input) {
     ...(input.taxId !== undefined ? { tax_id: input.taxId } : {}),
     ...(input.notes !== undefined ? { notes: input.notes } : {}),
   };
-  const { data, error } = await updateCustomer(supabase, businessId, customerId, patch);
-  throwOnSupabaseError(error);
+  const { data, error } = await updateCustomer(db, businessId, customerId, patch);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "CUSTOMER_NOT_FOUND", "Customer was not found");
   return data;
 }
 
-export async function archiveCustomerRecord(supabase, businessId, customerId) {
-  await getCustomerById(supabase, businessId, customerId);
-  const { data, error } = await archiveCustomer(supabase, businessId, customerId);
-  throwOnSupabaseError(error);
+export async function archiveCustomerRecord(db, businessId, customerId) {
+  await getCustomerById(db, businessId, customerId);
+  const { data, error } = await archiveCustomer(db, businessId, customerId);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "CUSTOMER_NOT_FOUND", "Customer was not found");
 }
 
-export async function getCustomerLedger(supabase, businessId, customerId) {
-  await getCustomerById(supabase, businessId, customerId);
+export async function getCustomerLedger(db, businessId, customerId) {
+  await getCustomerById(db, businessId, customerId);
   const [invoiceResult, paymentResult] = await Promise.all([
-    customerInvoices(supabase, businessId, customerId),
-    customerPayments(supabase, businessId, customerId),
+    customerInvoices(db, businessId, customerId),
+    customerPayments(db, businessId, customerId),
   ]);
-  throwOnSupabaseError(invoiceResult.error);
-  throwOnSupabaseError(paymentResult.error);
+  throwOnDatabaseError(invoiceResult.error);
+  throwOnDatabaseError(paymentResult.error);
   return {
     invoices: invoiceResult.data,
     payments: paymentResult.data,
@@ -88,16 +88,16 @@ export async function getCustomerLedger(supabase, businessId, customerId) {
   };
 }
 
-export async function getCustomerInvoices(supabase, businessId, customerId) {
-  await getCustomerById(supabase, businessId, customerId);
-  const { data, error } = await customerInvoices(supabase, businessId, customerId);
-  throwOnSupabaseError(error);
+export async function getCustomerInvoices(db, businessId, customerId) {
+  await getCustomerById(db, businessId, customerId);
+  const { data, error } = await customerInvoices(db, businessId, customerId);
+  throwOnDatabaseError(error);
   return data;
 }
 
-export async function getCustomerPayments(supabase, businessId, customerId) {
-  await getCustomerById(supabase, businessId, customerId);
-  const { data, error } = await customerPayments(supabase, businessId, customerId);
-  throwOnSupabaseError(error);
+export async function getCustomerPayments(db, businessId, customerId) {
+  await getCustomerById(db, businessId, customerId);
+  const { data, error } = await customerPayments(db, businessId, customerId);
+  throwOnDatabaseError(error);
   return data;
 }

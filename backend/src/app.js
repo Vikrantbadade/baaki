@@ -9,7 +9,7 @@ import apiRouter from "./routes/index.js";
 import { openapi } from "./docs/openapi.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
-import { checkSupabaseReadiness } from "./config/supabase.js";
+import { checkDatabaseReadiness } from "./config/database.js";
 import { AppError } from "./errors/AppError.js";
 import { requestIdMiddleware } from "./middlewares/requestIdMiddleware.js";
 import { rateLimitMiddleware } from "./middlewares/rateLimitMiddleware.js";
@@ -81,14 +81,14 @@ export function createApp() {
     "/ready",
     asyncHandler(async (req, res) => {
       try {
-        await checkSupabaseReadiness();
+        await checkDatabaseReadiness();
       } catch {
         throw new AppError(503, "DEPENDENCY_NOT_READY", "A required dependency is unavailable");
       }
       res.json({
         data: {
           status: "ready",
-          dependencies: { supabaseAuth: "available", postgresRest: "available" },
+          dependencies: { postgres: "available" },
         },
         meta: { requestId: req.id },
       });

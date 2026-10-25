@@ -12,7 +12,7 @@ export async function interpretVoice(req, res) {
 
 export async function previewPlan(req, res) {
   const result = await collectionPlanner.previewCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.body,
   );
@@ -21,7 +21,7 @@ export async function previewPlan(req, res) {
 
 export async function createPlan(req, res) {
   const result = await collectionPlanner.saveCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.body,
   );
@@ -30,7 +30,7 @@ export async function createPlan(req, res) {
 
 export async function listPlans(req, res) {
   const result = await collectionPlanner.getCollectionPlans(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.query,
   );
@@ -39,7 +39,7 @@ export async function listPlans(req, res) {
 
 export async function getPlan(req, res) {
   const result = await collectionPlanner.getCollectionPlanById(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.planId,
   );
@@ -48,7 +48,7 @@ export async function getPlan(req, res) {
 
 export async function approvePlan(req, res) {
   const result = await collectionPlanner.approveCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.planId,
   );
@@ -57,7 +57,7 @@ export async function approvePlan(req, res) {
 
 export async function rejectPlan(req, res) {
   const result = await collectionPlanner.rejectCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.planId,
     req.validated.body?.reason,
@@ -67,7 +67,7 @@ export async function rejectPlan(req, res) {
 
 export async function cancelPlan(req, res) {
   const result = await collectionPlanner.cancelCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.planId,
   );
@@ -76,9 +76,10 @@ export async function cancelPlan(req, res) {
 
 export async function executePlan(req, res) {
   const result = await collectionPlanner.executeCollectionPlan(
-    req.supabase,
+    req.db,
     req.business.id,
     req.validated.params.planId,
+    req.id,
   );
   send(res, req, result, 200);
 }

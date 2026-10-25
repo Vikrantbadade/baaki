@@ -19,7 +19,7 @@ describe("HTTP application", () => {
     expect(response.body.paths["/api/v1/invoices/{invoiceId}/timeline"].get).toBeTruthy();
   });
 
-  it("protects invoice document endpoints with Supabase authentication", async () => {
+  it("protects invoice document endpoints with JWT authentication", async () => {
     const invoiceId = "00000000-0000-4000-8000-000000000001";
     const response = await request(app).get(`/api/v1/invoices/${invoiceId}/pdf`);
     expect(response.status).toBe(401);

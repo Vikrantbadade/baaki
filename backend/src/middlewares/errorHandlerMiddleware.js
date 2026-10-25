@@ -1,6 +1,6 @@
 import { AppError } from "../errors/AppError.js";
 import { logger } from "../config/logger.js";
-import { getSupabaseErrorContext } from "../utils/supabaseError.js";
+import { getDatabaseErrorContext } from "../utils/databaseResult.js";
 
 function sanitizeDiagnostic(value) {
   if (typeof value !== "string" || value.length === 0) return undefined;
@@ -63,7 +63,7 @@ export function errorHandlerMiddleware(error, req, res, _next) {
         : "An unexpected error occurred";
 
   const databaseError = error instanceof AppError ? error.cause : error;
-  const databaseContext = error?.databaseContext ?? getSupabaseErrorContext(databaseError);
+  const databaseContext = error?.databaseContext ?? getDatabaseErrorContext(databaseError);
   if (databaseContext && databaseError) {
     const logFields = {
         requestId: req.id,
@@ -72,10 +72,13 @@ export function errorHandlerMiddleware(error, req, res, _next) {
         status,
         operation: databaseContext.operation,
         table: databaseContext.table,
-        supabaseCode: sanitizeDiagnostic(databaseError.code),
-        supabaseMessage: sanitizeDiagnostic(databaseError.message),
-        supabaseDetails: sanitizeDatabaseDetails(databaseError.details),
-        supabaseHint: sanitizeDatabaseHint(databaseError.hint),
+        databaseCode: sanitizeDiagnostic(databaseError.code),
+        ...(databaseError.rollbackError
+          ? { rollbackCode: sanitizeDiagnostic(databaseError.rollbackError.code) }
+          : {}),
+        databaseMessage: sanitizeDiagnostic(databaseError.message),
+        databaseDetails: sanitizeDatabaseDetails(databaseError.detail),
+        databaseHint: sanitizeDatabaseHint(databaseError.hint),
       };
     if (status >= 500) {
       logger.error(logFields, "Database operation failed");

@@ -8,13 +8,13 @@ export async function createSnapshot(req, res) {
   send(
     res,
     req,
-    await cashflow.recordCashSnapshot(req.supabase, req.business.id, req.validated.body),
+    await cashflow.recordCashSnapshot(req.db, req.business.id, req.validated.body),
     201,
   );
 }
 
 export async function getLatestSnapshot(req, res) {
-  send(res, req, await cashflow.getLatestCashSnapshot(req.supabase, req.business.id));
+  send(res, req, await cashflow.getLatestCashSnapshot(req.db, req.business.id));
 }
 
 export async function listSnapshots(req, res) {
@@ -22,7 +22,7 @@ export async function listSnapshots(req, res) {
     res,
     req,
     await cashflow.getCashSnapshots(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.query.page,
       req.validated.query.limit,
@@ -31,7 +31,7 @@ export async function listSnapshots(req, res) {
 }
 
 export async function createEntry(req, res) {
-  send(res, req, await cashflow.addCashflowEntry(req.supabase, req.business.id, req.validated.body), 201);
+  send(res, req, await cashflow.addCashflowEntry(req.db, req.business.id, req.validated.body), 201);
 }
 
 export async function listEntries(req, res) {
@@ -39,7 +39,7 @@ export async function listEntries(req, res) {
     res,
     req,
     await cashflow.getCashflowEntries(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.query,
     ),
@@ -51,7 +51,7 @@ export async function getEntry(req, res) {
     res,
     req,
     await cashflow.getCashflowEntryById(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.params.entryId,
     ),
@@ -63,7 +63,7 @@ export async function updateEntry(req, res) {
     res,
     req,
     await cashflow.changeCashflowEntry(
-      req.supabase,
+      req.db,
       req.business.id,
       req.validated.params.entryId,
       req.validated.body,
@@ -72,7 +72,7 @@ export async function updateEntry(req, res) {
 }
 
 export async function deleteEntry(req, res) {
-  await cashflow.removeCashflowEntry(req.supabase, req.business.id, req.validated.params.entryId);
+  await cashflow.removeCashflowEntry(req.db, req.business.id, req.validated.params.entryId);
   res.status(204).end();
 }
 
@@ -80,15 +80,15 @@ export async function createForecast(req, res) {
   send(
     res,
     req,
-    await cashflow.createCashflowForecast(req.supabase, req.business.id, req.validated.body),
+    await cashflow.createCashflowForecast(req.db, req.business.id, req.validated.body),
     201,
   );
 }
 
 export async function getForecast(req, res) {
-  send(res, req, await cashflow.getLatestForecast(req.supabase, req.business.id));
+  send(res, req, await cashflow.getLatestForecast(req.db, req.business.id));
 }
 
 export async function getRisks(req, res) {
-  send(res, req, await cashflow.getCashflowRisks(req.supabase, req.business.id));
+  send(res, req, await cashflow.getCashflowRisks(req.db, req.business.id));
 }

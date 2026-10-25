@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const migrationsDirectory = fileURLToPath(new URL("../../supabase/migrations/", import.meta.url));
+const migrationsDirectory = fileURLToPath(new URL("../../migrations/", import.meta.url));
 
 function columns(value) {
   return value.split(",").map((column) => column.trim());
@@ -30,7 +30,7 @@ function parseTables(sql) {
   return tables;
 }
 
-describe("migration composite foreign keys", () => {
+describe("local migration composite foreign keys", () => {
   it("references an existing primary or unique key for every composite foreign key", async () => {
     const migrationFiles = (await readdir(migrationsDirectory))
       .filter((file) => file.endsWith(".sql"))

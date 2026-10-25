@@ -1,21 +1,20 @@
 import { AppError } from "../errors/AppError.js";
-import { getSupabaseErrorContext, withSupabaseContext } from "../utils/supabaseError.js";
+import { getDatabaseErrorContext, withDatabaseContext } from "../utils/databaseResult.js";
 
 export async function requireOwnerApproval(req, _res, next) {
-  const { data, error } = await withSupabaseContext(
-    req.supabase
-      .from("collection_plans")
-      .select("id,status")
-      .eq("business_id", req.business.id)
-      .eq("id", req.params.planId)
-      .maybeSingle(),
+  const { data, error } = await withDatabaseContext(
+    req.db.query(
+      "select id, status from public.collection_plans where business_id = $1 and id = $2",
+      [req.business.id, req.params.planId],
+    ),
     "select",
     "collection_plans",
+    { single: true },
   );
   if (error) {
     const appError = new AppError(500, "DATABASE_ERROR", "Collection plan could not be loaded");
     appError.cause = error;
-    appError.databaseContext = getSupabaseErrorContext(error);
+    appError.databaseContext = getDatabaseErrorContext(error);
     next(appError);
     return;
   }

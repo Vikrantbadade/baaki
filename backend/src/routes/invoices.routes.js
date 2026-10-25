@@ -17,8 +17,18 @@ import {
   invoiceUpdateSchema,
   documentDownloadSchema,
 } from "../schemas/api.schemas.js";
+import { z } from "zod";
 
 const router = Router();
+router.get(
+  "/documents/:documentId/content",
+  validateRequest(z.object({
+    params: z.object({ documentId: z.string().uuid() }),
+    query: z.object({ token: z.string().min(40).max(100) }),
+    body: z.object({}),
+  })),
+  asyncHandler(controller.downloadInvoiceDocumentContent),
+);
 router.use(authenticateUser, loadBusinessContext, requireBusinessOwnership);
 router.post("/preview", validateRequest(invoicePreviewSchema), asyncHandler(controller.previewInvoice));
 router.post(

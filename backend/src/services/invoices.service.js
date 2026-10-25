@@ -10,7 +10,7 @@ import {
   updateDraftInvoice,
 } from "../repositories/invoices.repository.js";
 import { calculateInvoiceTotals, quantityToMilli } from "../utils/money.js";
-import { throwOnSupabaseError } from "../utils/supabaseError.js";
+import { throwOnDatabaseError } from "../utils/databaseResult.js";
 import { getCustomerById } from "./customers.service.js";
 import { buildInvoiceSnapshot, renderInvoicePreviewHtml } from "./invoicePresentation.service.js";
 
@@ -46,10 +46,10 @@ export async function previewInvoice(input) {
 }
 
 export async function createInvoiceDraft(req, input) {
-  await getCustomerById(req.supabase, req.business.id, input.customerId);
+  await getCustomerById(req.db, req.business.id, input.customerId);
   const { items } = invoicePayload(input);
   const idempotency = idempotencyParameters(req, "invoice.create");
-  const { data, error } = await createDraftInvoice(req.supabase, {
+  const { data, error } = await createDraftInvoice(req.db, {
     p_business_id: req.business.id,
     p_customer_id: input.customerId,
     p_issue_date: input.issueDate ?? null,
@@ -59,28 +59,28 @@ export async function createInvoiceDraft(req, input) {
     p_idempotency_key: idempotency.key,
     p_request_hash: idempotency.requestHash,
   });
-  throwOnSupabaseError(error);
-  return getInvoiceById(req.supabase, req.business.id, data);
+  throwOnDatabaseError(error);
+  return getInvoiceById(req.db, req.business.id, data);
 }
 
-export async function getInvoices(supabase, businessId, query) {
-  const { data, error, count } = await listInvoices(supabase, businessId, query);
-  throwOnSupabaseError(error);
+export async function getInvoices(db, businessId, query) {
+  const { data, error, count } = await listInvoices(db, businessId, query);
+  throwOnDatabaseError(error);
   return { items: data, page: query.page, limit: query.limit, total: count };
 }
 
-export async function getInvoiceById(supabase, businessId, invoiceId) {
-  const { data, error } = await getInvoice(supabase, businessId, invoiceId);
-  throwOnSupabaseError(error);
+export async function getInvoiceById(db, businessId, invoiceId) {
+  const { data, error } = await getInvoice(db, businessId, invoiceId);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "INVOICE_NOT_FOUND", "Invoice was not found");
   return data;
 }
 
 export async function getInvoicePreview(req, invoiceId) {
-  const invoice = await getInvoiceById(req.supabase, req.business.id, invoiceId);
+  const invoice = await getInvoiceById(req.db, req.business.id, invoiceId);
   const customer = invoice.issued_snapshot
     ? null
-    : await getCustomerById(req.supabase, req.business.id, invoice.customer_id);
+    : await getCustomerById(req.db, req.business.id, invoice.customer_id);
   const snapshot = buildInvoiceSnapshot(invoice, req.business, customer);
   return renderInvoicePreviewHtml(snapshot, {
     status: invoice.status,
@@ -89,21 +89,21 @@ export async function getInvoicePreview(req, invoiceId) {
   });
 }
 
-export async function getInvoiceTimeline(supabase, businessId, invoiceId, query) {
-  await getInvoiceById(supabase, businessId, invoiceId);
-  const { data, error, count } = await listInvoiceEvents(supabase, businessId, invoiceId, query);
-  throwOnSupabaseError(error);
+export async function getInvoiceTimeline(db, businessId, invoiceId, query) {
+  await getInvoiceById(db, businessId, invoiceId);
+  const { data, error, count } = await listInvoiceEvents(db, businessId, invoiceId, query);
+  throwOnDatabaseError(error);
   return { items: data, page: query.page, limit: query.limit, total: count };
 }
 
 export async function editInvoiceDraft(req, invoiceId, input) {
-  const current = await getInvoiceById(req.supabase, req.business.id, invoiceId);
+  const current = await getInvoiceById(req.db, req.business.id, invoiceId);
   if (current.status !== "draft") {
     throw new AppError(409, "INVOICE_NOT_EDITABLE", "Only draft invoices can be edited");
   }
   const merged = { ...current, ...input };
   if (input.customerId) {
-    await getCustomerById(req.supabase, req.business.id, input.customerId);
+    await getCustomerById(req.db, req.business.id, input.customerId);
   }
   const invoiceInput = {
     customerId: merged.customerId ?? current.customer_id,
@@ -119,7 +119,7 @@ export async function editInvoiceDraft(req, invoiceId, input) {
     })),
   };
   const { items } = invoicePayload(invoiceInput);
-  const { data, error } = await updateDraftInvoice(req.supabase, {
+  const { data, error } = await updateDraftInvoice(req.db, {
     p_business_id: req.business.id,
     p_invoice_id: invoiceId,
     p_customer_id: invoiceInput.customerId,
@@ -128,20 +128,20 @@ export async function editInvoiceDraft(req, invoiceId, input) {
     p_notes: invoiceInput.notes ?? null,
     p_items: items,
   });
-  throwOnSupabaseError(error);
-  return getInvoiceById(req.supabase, req.business.id, data);
+  throwOnDatabaseError(error);
+  return getInvoiceById(req.db, req.business.id, data);
 }
 
-export async function issueInvoiceForBusiness(supabase, businessId, invoiceId) {
-  const { data, error } = await issueInvoice(supabase, businessId, invoiceId);
-  throwOnSupabaseError(error);
+export async function issueInvoiceForBusiness(db, businessId, invoiceId) {
+  const { data, error } = await issueInvoice(db, businessId, invoiceId);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "INVOICE_NOT_FOUND", "Invoice was not found");
-  return getInvoiceById(supabase, businessId, invoiceId);
+  return getInvoiceById(db, businessId, invoiceId);
 }
 
-export async function cancelInvoiceForBusiness(supabase, businessId, invoiceId, reason) {
-  const { data, error } = await cancelInvoice(supabase, businessId, invoiceId, reason);
-  throwOnSupabaseError(error);
+export async function cancelInvoiceForBusiness(db, businessId, invoiceId, reason) {
+  const { data, error } = await cancelInvoice(db, businessId, invoiceId, reason);
+  throwOnDatabaseError(error);
   if (!data) throw new AppError(404, "INVOICE_NOT_FOUND", "Invoice was not found");
-  return getInvoiceById(supabase, businessId, invoiceId);
+  return getInvoiceById(db, businessId, invoiceId);
 }
